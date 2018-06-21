@@ -12,9 +12,6 @@
 removeFromArray = (array, item, index) =>
     while((index = array.indexOf(item)) > -1) 
         array.splice(index, 1);
-    
-
-
 
 module.exports = (robot) ->
 
@@ -31,6 +28,10 @@ module.exports = (robot) ->
 
         if not db?
             db = {}
+
+        testee = challenger
+
+        msg.send "Saving " + testee
 
         db[testee] = {}
 
@@ -61,6 +62,12 @@ module.exports = (robot) ->
 
         db[testee]["questions"] = questions
         db[testee]["answers"] = answers
+
+        currentTime = new Date()
+        currentTime = new Date( currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate())
+        db["time"] = currentTime
+
+        robot.brain.set 'baseline_test_db', db
 
         ###
 
@@ -135,35 +142,51 @@ module.exports = (robot) ->
             msg.send user + ": Unch added! ✅ (I got your back :relaxed:)"
     ###
 
-    robot.listen(
-        # Matcher
-        (message) ->
-            console.log "User:" + user + " db:" + db
-            user = message.user.name
-            if user in db
-                # Respond
-                console.log "Y"
-                step = db[user]["step"]
-                answers = db[user]["answers"]                
-                correct_answers = db[user]["correct_answers"]
+    robot.hear /#(.+)/i, (msg) ->
+        user = msg.message.user.name
 
-                if message == answers[step]
-                    db[user]["correct_answers"] = correct_answers + 1
-                true
-            else
-                console.log "N"
-                false
-        # Callback
-        (response) ->
-            response.send "RESPONSE"
-            if db? and db[user]?
-                step = db[user][step]
-                db[user][step] = step + 1
-                q = db[user][questions][step + 1]
-                questions_answered = db[user]["questions_answered"]
-                db[user]["questions_answered"] = questions_answered + 1
-                response.reply q
-    )
+        if not db? or not user of db
+            console.log "No test recorded."
+            return
+
+        if db["time"]?
+            recordedTime = new Date(db["time"])
+        else
+            recordedTime = new Date('01/01/2000')
+        # msg.send "recordedTime " + recordedTime
+
+        currentTime = new Date()
+        currentTime = new Date( currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate())
+        recordedTime = new Date( recordedTime.getFullYear(), recordedTime.getMonth(), recordedTime.getDate())
+
+        milisecsPerHour = 1000 * 60 * 60
+        milisecsBetween = currentTime.getTime() - recordedTime.getTime()
+        hours = milisecsBetween / milisecsPerHour
+
+        if Math.floor(hours) != 0
+            delete db[user]
+            return
+
+        # Respond
+        answer = msg.match[1]
+        
+        step = db[user]["step"]
+        answers = db[user]["answers"]                
+        correct_answers = db[user]["correct_answers"]
+
+        console.log answer
+
+        if answer.toUpperCase() == answers[step].toUpperCase()
+            db[user]["correct_answers"] = correct_answers + 1
+            console.log "correct"
+        else
+            console.log "incorrect"
+        
+        db[user]["step"] = step + 1
+        q = db[user]["questions"][step + 1]
+        questions_answered = db[user]["questions_answered"]
+        db[user]["questions_answered"] = questions_answered + 1
+        msg.send q
 
     robot.hear /^lunch summarize (.+)$/i, (msg) ->
         targetRestoran = msg.match[1].toUpperCase()
