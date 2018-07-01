@@ -1,5 +1,5 @@
 # Description
-#   Keeps track of lunch orders
+#   Perform a Blade Runner 2049 Baseline Test on someone
 #
 # Commands:
 #   baseline test @<USERNAME> - runs a baseline test on a user
