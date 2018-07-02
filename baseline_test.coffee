@@ -14,7 +14,7 @@ module.exports = (robot) ->
 
     db = {}
 
-    robot.hear /baseline test (@.+)/i, (msg) ->
+    robot.hear /baseline test @(.+)/i, (msg) ->
         
         challenger = msg.message.user.name
         testee = msg.match[1]
